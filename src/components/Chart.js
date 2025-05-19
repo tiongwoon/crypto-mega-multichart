@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { createChart } from "lightweight-charts";
+import TokenDetailsModal from "./TokenDetailsModal";
 
 const ChartContainer = styled.div`
   position: relative;
@@ -14,6 +15,7 @@ const ChartContainer = styled.div`
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
+  cursor: pointer;
 `;
 
 const RemoveButton = styled.button`
@@ -41,12 +43,24 @@ const AssetName = styled.div`
   font-size: 14px;
   font-weight: 500;
   z-index: 10;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: #8a2be2;
+  text-underline-offset: 4px;
+
+  &:hover {
+    color: #9b4de3;
+  }
 `;
 
 const Chart = ({ data, onRemove }) => {
   const chartContainerRef = useRef();
   const chartRef = useRef();
   const [chartData, setChartData] = useState(data);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [tokenDetails, setTokenDetails] = useState(null);
+  const [currentTokenIndex, setCurrentTokenIndex] = useState(0);
+  const [allTokens, setAllTokens] = useState([]);
 
   console.log("Initial data:", data);
   console.log("Initial chartData:", chartData);
@@ -78,6 +92,49 @@ const Chart = ({ data, onRemove }) => {
       });
     } catch (error) {
       console.error("Error fetching new chart data:", error);
+    }
+  };
+
+  // Function to fetch token details
+  const fetchTokenDetails = async () => {
+    try {
+      const response = await fetch(
+        `https://pro-api.coingecko.com/api/v3/onchain/networks/${data.network}/pools/${data.address}/info`,
+        {
+          headers: {
+            "x-cg-pro-api-key": process.env.REACT_APP_COINGECKO_API_KEY,
+          },
+        }
+      );
+      const result = await response.json();
+      if (result.data && result.data.length > 0) {
+        setAllTokens(result.data.map((item) => item.attributes));
+        setTokenDetails(result.data[0].attributes);
+        setCurrentTokenIndex(0);
+      }
+    } catch (error) {
+      console.error("Error fetching token details:", error);
+    }
+  };
+
+  const handleChartClick = () => {
+    fetchTokenDetails();
+    setIsModalOpen(true);
+  };
+
+  const handleNextToken = () => {
+    if (currentTokenIndex < allTokens.length - 1) {
+      const nextIndex = currentTokenIndex + 1;
+      setCurrentTokenIndex(nextIndex);
+      setTokenDetails(allTokens[nextIndex]);
+    }
+  };
+
+  const handlePrevToken = () => {
+    if (currentTokenIndex > 0) {
+      const prevIndex = currentTokenIndex - 1;
+      setCurrentTokenIndex(prevIndex);
+      setTokenDetails(allTokens[prevIndex]);
     }
   };
 
@@ -190,10 +247,21 @@ const Chart = ({ data, onRemove }) => {
   }, [chartData]);
 
   return (
-    <ChartContainer ref={chartContainerRef}>
-      <AssetName>{data.name}</AssetName>
-      <RemoveButton onClick={onRemove}>X</RemoveButton>
-    </ChartContainer>
+    <>
+      <ChartContainer ref={chartContainerRef}>
+        <AssetName onClick={handleChartClick}>{data.name}</AssetName>
+        <RemoveButton onClick={onRemove}>X</RemoveButton>
+      </ChartContainer>
+      <TokenDetailsModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        tokenDetails={tokenDetails}
+        currentTokenIndex={currentTokenIndex}
+        onNextToken={handleNextToken}
+        onPrevToken={handlePrevToken}
+        totalTokens={allTokens.length}
+      />
+    </>
   );
 };
 
