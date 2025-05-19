@@ -124,6 +124,12 @@ const TableSection = () => {
     chain: "all",
     minMarketCap: "",
     maxMarketCap: "",
+    minLiquidity: "",
+    maxLiquidity: "",
+    min24hVolume: "",
+    max24hVolume: "",
+    minPoolAge: "",
+    maxPoolAge: "",
     sort: "h6_trending",
   });
 
@@ -146,6 +152,30 @@ const TableSection = () => {
       }
       if (filters.maxMarketCap) {
         url += `&fdv_usd_max=${filters.maxMarketCap}`;
+      }
+
+      // Add liquidity filters
+      if (filters.minLiquidity) {
+        url += `&reserve_in_usd_min=${filters.minLiquidity}`;
+      }
+      if (filters.maxLiquidity) {
+        url += `&reserve_in_usd_max=${filters.maxLiquidity}`;
+      }
+
+      // Add 24h volume filters
+      if (filters.min24hVolume) {
+        url += `&h24_volume_usd_min=${filters.min24hVolume}`;
+      }
+      if (filters.max24hVolume) {
+        url += `&h24_volume_usd_max=${filters.max24hVolume}`;
+      }
+
+      // Add pool age filters
+      if (filters.minPoolAge) {
+        url += `&pool_created_hour_min=${filters.minPoolAge}`;
+      }
+      if (filters.maxPoolAge) {
+        url += `&pool_created_hour_max=${filters.maxPoolAge}`;
       }
 
       // Add sort parameter
@@ -218,6 +248,72 @@ const TableSection = () => {
               value={filters.maxMarketCap}
               onChange={handleFilterChange}
               placeholder="Enter max market cap"
+            />
+          </FilterGroup>
+
+          <FilterGroup>
+            <Label>Min Liquidity</Label>
+            <Input
+              type="number"
+              name="minLiquidity"
+              value={filters.minLiquidity}
+              onChange={handleFilterChange}
+              placeholder="Enter min liquidity"
+            />
+          </FilterGroup>
+
+          <FilterGroup>
+            <Label>Max Liquidity</Label>
+            <Input
+              type="number"
+              name="maxLiquidity"
+              value={filters.maxLiquidity}
+              onChange={handleFilterChange}
+              placeholder="Enter max liquidity"
+            />
+          </FilterGroup>
+
+          <FilterGroup>
+            <Label>Min 24h Volume</Label>
+            <Input
+              type="number"
+              name="min24hVolume"
+              value={filters.min24hVolume}
+              onChange={handleFilterChange}
+              placeholder="Enter min 24h volume"
+            />
+          </FilterGroup>
+
+          <FilterGroup>
+            <Label>Max 24h Volume</Label>
+            <Input
+              type="number"
+              name="max24hVolume"
+              value={filters.max24hVolume}
+              onChange={handleFilterChange}
+              placeholder="Enter max 24h volume"
+            />
+          </FilterGroup>
+
+          <FilterGroup>
+            <Label>Min Pool Age (hours)</Label>
+            <Input
+              type="number"
+              name="minPoolAge"
+              value={filters.minPoolAge}
+              onChange={handleFilterChange}
+              placeholder="Enter min pool age"
+            />
+          </FilterGroup>
+
+          <FilterGroup>
+            <Label>Max Pool Age (hours)</Label>
+            <Input
+              type="number"
+              name="maxPoolAge"
+              value={filters.maxPoolAge}
+              onChange={handleFilterChange}
+              placeholder="Enter max pool age"
             />
           </FilterGroup>
 
