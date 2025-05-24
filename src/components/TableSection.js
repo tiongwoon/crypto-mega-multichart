@@ -195,6 +195,10 @@ const TableSection = ({ onCollapseChange, isCollapsed }) => {
   const [currentTokenIndex, setCurrentTokenIndex] = useState(0);
   const [allTokens, setAllTokens] = useState([]);
 
+  // Add state for current network and address
+  const [currentNetwork, setCurrentNetwork] = useState(null);
+  const [currentAddress, setCurrentAddress] = useState(null);
+
   const toggleCollapse = () => {
     onCollapseChange((prev) => !prev);
   };
@@ -216,6 +220,9 @@ const TableSection = ({ onCollapseChange, isCollapsed }) => {
         setTokenDetails(result.data[0].attributes);
         setCurrentTokenIndex(0);
         setIsModalOpen(true);
+        // Store network and address for pool details
+        setCurrentNetwork(network);
+        setCurrentAddress(address);
       }
     } catch (error) {
       console.error("Error fetching token details:", error);
@@ -511,6 +518,8 @@ const TableSection = ({ onCollapseChange, isCollapsed }) => {
           onNextToken={handleNextToken}
           onPrevToken={handlePrevToken}
           totalTokens={allTokens.length}
+          network={currentNetwork}
+          address={currentAddress}
         />
       </TableContent>
     </TableContainer>

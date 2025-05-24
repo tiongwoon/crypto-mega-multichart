@@ -28,16 +28,16 @@ const ChartContainer = styled.div`
   flex-direction: column;
   gap: 20px;
   transition: margin-right 0.3s ease;
-  margin-right: ${(props) => (props.isTableCollapsed ? "0" : "1px")};
+  margin-right: ${(props) => (props.isTableCollapsed ? "0" : "20px")};
   min-width: 0;
 `;
 
 const TableContainer = styled.div`
-  flex: 0 0 ${(props) => (props.isCollapsed ? "10px" : "500px")};
+  flex: 0 0 ${(props) => (props.isCollapsed ? "40px" : "500px")};
   transition: flex-basis 0.3s ease;
   min-width: 0;
   position: relative;
-  padding-left: 5px;
+  padding-left: 20px;
 `;
 
 function App() {

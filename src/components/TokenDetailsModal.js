@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 
 const ModalOverlay = styled.div`
@@ -111,6 +111,42 @@ const TokenCounter = styled.div`
   font-size: 14px;
 `;
 
+const PoolDetails = styled.div`
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #2b2b43;
+`;
+
+const PoolDetailRow = styled.div`
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 12px;
+  color: #ffffff;
+  font-size: 14px;
+  gap: 8px;
+`;
+
+const PoolDetailLabel = styled.span`
+  color: #ffffff;
+  font-weight: 600;
+`;
+
+const formatMarketCap = (value) => {
+  if (value >= 1000000) {
+    return `${(value / 1000000).toFixed(1)}M`;
+  }
+  return value.toLocaleString();
+};
+
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+};
+
 const TokenDetailsModal = ({
   isOpen,
   onClose,
@@ -119,7 +155,38 @@ const TokenDetailsModal = ({
   onNextToken,
   onPrevToken,
   totalTokens,
+  network,
+  address,
 }) => {
+  const [poolDetails, setPoolDetails] = useState(null);
+
+  useEffect(() => {
+    const fetchPoolDetails = async () => {
+      if (!network || !address) return;
+
+      try {
+        const response = await fetch(
+          `https://pro-api.coingecko.com/api/v3/onchain/networks/${network}/pools/${address}`,
+          {
+            headers: {
+              "x-cg-pro-api-key": process.env.REACT_APP_COINGECKO_API_KEY,
+            },
+          }
+        );
+        const result = await response.json();
+        if (result.data) {
+          setPoolDetails(result.data.attributes);
+        }
+      } catch (error) {
+        console.error("Error fetching pool details:", error);
+      }
+    };
+
+    if (isOpen) {
+      fetchPoolDetails();
+    }
+  }, [isOpen, network, address]);
+
   if (!isOpen || !tokenDetails) return null;
 
   const {
@@ -154,6 +221,28 @@ const TokenDetailsModal = ({
         {image_url && <TokenImage src={image_url} alt={name} />}
         <TokenName>{name}</TokenName>
         {description && <Description>{description}</Description>}
+
+        {poolDetails && (
+          <PoolDetails>
+            <PoolDetailRow>
+              <PoolDetailLabel>FDV:</PoolDetailLabel>
+              <span>${formatMarketCap(poolDetails.fdv_usd)}</span>
+            </PoolDetailRow>
+            <PoolDetailRow>
+              <PoolDetailLabel>24H Volume:</PoolDetailLabel>
+              <span>${formatMarketCap(poolDetails.volume_usd?.h24 || 0)}</span>
+            </PoolDetailRow>
+            <PoolDetailRow>
+              <PoolDetailLabel>Liquidity:</PoolDetailLabel>
+              <span>${formatMarketCap(poolDetails.reserve_in_usd || 0)}</span>
+            </PoolDetailRow>
+            <PoolDetailRow>
+              <PoolDetailLabel>Pool Created:</PoolDetailLabel>
+              <span>{formatDate(poolDetails.pool_created_at)}</span>
+            </PoolDetailRow>
+          </PoolDetails>
+        )}
+
         <SocialLinks>
           {telegram_handle && (
             <SocialLink

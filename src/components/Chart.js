@@ -260,6 +260,8 @@ const Chart = ({ data, onRemove }) => {
         onNextToken={handleNextToken}
         onPrevToken={handlePrevToken}
         totalTokens={allTokens.length}
+        network={data.network}
+        address={data.address}
       />
     </>
   );
