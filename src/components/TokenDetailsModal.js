@@ -222,27 +222,6 @@ const TokenDetailsModal = ({
         <TokenName>{name}</TokenName>
         {description && <Description>{description}</Description>}
 
-        {poolDetails && (
-          <PoolDetails>
-            <PoolDetailRow>
-              <PoolDetailLabel>FDV:</PoolDetailLabel>
-              <span>${formatMarketCap(poolDetails.fdv_usd)}</span>
-            </PoolDetailRow>
-            <PoolDetailRow>
-              <PoolDetailLabel>24H Volume:</PoolDetailLabel>
-              <span>${formatMarketCap(poolDetails.volume_usd?.h24 || 0)}</span>
-            </PoolDetailRow>
-            <PoolDetailRow>
-              <PoolDetailLabel>Liquidity:</PoolDetailLabel>
-              <span>${formatMarketCap(poolDetails.reserve_in_usd || 0)}</span>
-            </PoolDetailRow>
-            <PoolDetailRow>
-              <PoolDetailLabel>Pool Created:</PoolDetailLabel>
-              <span>{formatDate(poolDetails.pool_created_at)}</span>
-            </PoolDetailRow>
-          </PoolDetails>
-        )}
-
         <SocialLinks>
           {telegram_handle && (
             <SocialLink
@@ -272,6 +251,28 @@ const TokenDetailsModal = ({
             </SocialLink>
           )}
         </SocialLinks>
+
+        {poolDetails && (
+          <PoolDetails>
+            <h3>- Pool Details -</h3>
+            <PoolDetailRow>
+              <PoolDetailLabel>FDV:</PoolDetailLabel>
+              <span>${formatMarketCap(poolDetails.fdv_usd)}</span>
+            </PoolDetailRow>
+            <PoolDetailRow>
+              <PoolDetailLabel>24H Volume:</PoolDetailLabel>
+              <span>${formatMarketCap(poolDetails.volume_usd?.h24 || 0)}</span>
+            </PoolDetailRow>
+            <PoolDetailRow>
+              <PoolDetailLabel>Liquidity:</PoolDetailLabel>
+              <span>${formatMarketCap(poolDetails.reserve_in_usd || 0)}</span>
+            </PoolDetailRow>
+            <PoolDetailRow>
+              <PoolDetailLabel>Pool Created:</PoolDetailLabel>
+              <span>{formatDate(poolDetails.pool_created_at)}</span>
+            </PoolDetailRow>
+          </PoolDetails>
+        )}
       </ModalContent>
     </ModalOverlay>
   );
