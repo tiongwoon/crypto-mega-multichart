@@ -2,11 +2,53 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import axios from "axios";
 import { useChart } from "../context/ChartContext";
+import TokenDetailsModal from "./TokenDetailsModal";
 
 const TableContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
+  width: 100%;
+  position: relative;
+  background: #1a1a1a;
+  border-left: 1px solid #8a2be2;
+  overflow: visible;
+`;
+
+const CollapseButton = styled.button`
+  position: absolute;
+  top: 20px;
+  left: -20px;
+  background: #8a2be2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  width: 20px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transform: translateX(${(props) => (props.isCollapsed ? "0" : "0")});
+
+  &:hover {
+    background: #9b4de3;
+  }
+`;
+
+const CollapseIcon = styled.span`
+  transform: rotate(${(props) => (props.isCollapsed ? "180deg" : "0deg")});
+  transition: transform 0.3s ease;
+  font-size: 12px;
+`;
+
+const TableContent = styled.div`
+  opacity: ${(props) => (props.isCollapsed ? "0" : "1")};
+  visibility: ${(props) => (props.isCollapsed ? "hidden" : "visible")};
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  width: 100%;
+  padding-left: 20px;
 `;
 
 const FilterSection = styled.div`
@@ -104,6 +146,20 @@ const AddButton = styled.button`
   }
 `;
 
+const AssetNameCell = styled.td`
+  padding: 12px;
+  border-bottom: 1px solid #2b2b43;
+  color: #ffffff;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: #8a2be2;
+  text-underline-offset: 4px;
+
+  &:hover {
+    color: #9b4de3;
+  }
+`;
+
 const formatMarketCap = (value) => {
   if (value >= 1000000) {
     return `${(value / 1000000).toFixed(1)}M`;
@@ -116,7 +172,7 @@ const formatPriceChange = (priceChange) => {
   return Number(priceChange).toFixed(2);
 };
 
-const TableSection = () => {
+const TableSection = ({ onCollapseChange, isCollapsed }) => {
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(false);
   const { addChart } = useChart();
@@ -132,6 +188,55 @@ const TableSection = () => {
     maxPoolAge: "",
     sort: "h6_trending",
   });
+
+  // Add state for token details modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [tokenDetails, setTokenDetails] = useState(null);
+  const [currentTokenIndex, setCurrentTokenIndex] = useState(0);
+  const [allTokens, setAllTokens] = useState([]);
+
+  const toggleCollapse = () => {
+    onCollapseChange((prev) => !prev);
+  };
+
+  // Function to fetch token details
+  const fetchTokenDetails = async (network, address) => {
+    try {
+      const response = await fetch(
+        `https://pro-api.coingecko.com/api/v3/onchain/networks/${network}/pools/${address}/info`,
+        {
+          headers: {
+            "x-cg-pro-api-key": process.env.REACT_APP_COINGECKO_API_KEY,
+          },
+        }
+      );
+      const result = await response.json();
+      if (result.data && result.data.length > 0) {
+        setAllTokens(result.data.map((item) => item.attributes));
+        setTokenDetails(result.data[0].attributes);
+        setCurrentTokenIndex(0);
+        setIsModalOpen(true);
+      }
+    } catch (error) {
+      console.error("Error fetching token details:", error);
+    }
+  };
+
+  const handleNextToken = () => {
+    if (currentTokenIndex < allTokens.length - 1) {
+      const nextIndex = currentTokenIndex + 1;
+      setCurrentTokenIndex(nextIndex);
+      setTokenDetails(allTokens[nextIndex]);
+    }
+  };
+
+  const handlePrevToken = () => {
+    if (currentTokenIndex > 0) {
+      const prevIndex = currentTokenIndex - 1;
+      setCurrentTokenIndex(prevIndex);
+      setTokenDetails(allTokens[prevIndex]);
+    }
+  };
 
   const fetchAssets = React.useCallback(async () => {
     setLoading(true);
@@ -214,175 +319,200 @@ const TableSection = () => {
 
   return (
     <TableContainer>
-      <FilterSection>
-        <form onSubmit={handleSubmit}>
-          <FilterGroup>
-            <Label>Chain</Label>
-            <Select
-              name="chain"
-              value={filters.chain}
-              onChange={handleFilterChange}
-            >
-              <option value="all">All Chains</option>
-              <option value="solana">Solana</option>
-              <option value="base">Base</option>
-            </Select>
-          </FilterGroup>
+      <CollapseButton onClick={toggleCollapse} isCollapsed={isCollapsed}>
+        <CollapseIcon isCollapsed={isCollapsed}>◀</CollapseIcon>
+      </CollapseButton>
 
-          <FilterGroup>
-            <Label>Min Market Cap</Label>
-            <Input
-              type="number"
-              name="minMarketCap"
-              value={filters.minMarketCap}
-              onChange={handleFilterChange}
-              placeholder="Enter min market cap"
-            />
-          </FilterGroup>
+      <TableContent isCollapsed={isCollapsed}>
+        <FilterSection>
+          <form onSubmit={handleSubmit}>
+            <FilterGroup>
+              <Label>Chain</Label>
+              <Select
+                name="chain"
+                value={filters.chain}
+                onChange={handleFilterChange}
+              >
+                <option value="all">All Chains</option>
+                <option value="solana">Solana</option>
+                <option value="base">Base</option>
+              </Select>
+            </FilterGroup>
 
-          <FilterGroup>
-            <Label>Max Market Cap</Label>
-            <Input
-              type="number"
-              name="maxMarketCap"
-              value={filters.maxMarketCap}
-              onChange={handleFilterChange}
-              placeholder="Enter max market cap"
-            />
-          </FilterGroup>
+            <FilterGroup>
+              <Label>Min Market Cap</Label>
+              <Input
+                type="number"
+                name="minMarketCap"
+                value={filters.minMarketCap}
+                onChange={handleFilterChange}
+                placeholder="Enter min market cap"
+              />
+            </FilterGroup>
 
-          <FilterGroup>
-            <Label>Min Liquidity</Label>
-            <Input
-              type="number"
-              name="minLiquidity"
-              value={filters.minLiquidity}
-              onChange={handleFilterChange}
-              placeholder="Enter min liquidity"
-            />
-          </FilterGroup>
+            <FilterGroup>
+              <Label>Max Market Cap</Label>
+              <Input
+                type="number"
+                name="maxMarketCap"
+                value={filters.maxMarketCap}
+                onChange={handleFilterChange}
+                placeholder="Enter max market cap"
+              />
+            </FilterGroup>
 
-          <FilterGroup>
-            <Label>Max Liquidity</Label>
-            <Input
-              type="number"
-              name="maxLiquidity"
-              value={filters.maxLiquidity}
-              onChange={handleFilterChange}
-              placeholder="Enter max liquidity"
-            />
-          </FilterGroup>
+            <FilterGroup>
+              <Label>Min Liquidity</Label>
+              <Input
+                type="number"
+                name="minLiquidity"
+                value={filters.minLiquidity}
+                onChange={handleFilterChange}
+                placeholder="Enter min liquidity"
+              />
+            </FilterGroup>
 
-          <FilterGroup>
-            <Label>Min 24h Volume</Label>
-            <Input
-              type="number"
-              name="min24hVolume"
-              value={filters.min24hVolume}
-              onChange={handleFilterChange}
-              placeholder="Enter min 24h volume"
-            />
-          </FilterGroup>
+            <FilterGroup>
+              <Label>Max Liquidity</Label>
+              <Input
+                type="number"
+                name="maxLiquidity"
+                value={filters.maxLiquidity}
+                onChange={handleFilterChange}
+                placeholder="Enter max liquidity"
+              />
+            </FilterGroup>
 
-          <FilterGroup>
-            <Label>Max 24h Volume</Label>
-            <Input
-              type="number"
-              name="max24hVolume"
-              value={filters.max24hVolume}
-              onChange={handleFilterChange}
-              placeholder="Enter max 24h volume"
-            />
-          </FilterGroup>
+            <FilterGroup>
+              <Label>Min 24h Volume</Label>
+              <Input
+                type="number"
+                name="min24hVolume"
+                value={filters.min24hVolume}
+                onChange={handleFilterChange}
+                placeholder="Enter min 24h volume"
+              />
+            </FilterGroup>
 
-          <FilterGroup>
-            <Label>Min Pool Age (hours)</Label>
-            <Input
-              type="number"
-              name="minPoolAge"
-              value={filters.minPoolAge}
-              onChange={handleFilterChange}
-              placeholder="Enter min pool age"
-            />
-          </FilterGroup>
+            <FilterGroup>
+              <Label>Max 24h Volume</Label>
+              <Input
+                type="number"
+                name="max24hVolume"
+                value={filters.max24hVolume}
+                onChange={handleFilterChange}
+                placeholder="Enter max 24h volume"
+              />
+            </FilterGroup>
 
-          <FilterGroup>
-            <Label>Max Pool Age (hours)</Label>
-            <Input
-              type="number"
-              name="maxPoolAge"
-              value={filters.maxPoolAge}
-              onChange={handleFilterChange}
-              placeholder="Enter max pool age"
-            />
-          </FilterGroup>
+            <FilterGroup>
+              <Label>Min Pool Age (hours)</Label>
+              <Input
+                type="number"
+                name="minPoolAge"
+                value={filters.minPoolAge}
+                onChange={handleFilterChange}
+                placeholder="Enter min pool age"
+              />
+            </FilterGroup>
 
-          <FilterGroup>
-            <Label>Sort</Label>
-            <Select
-              name="sort"
-              value={filters.sort}
-              onChange={handleFilterChange}
-            >
-              <option value="m5_trending">5 Min Trending</option>
-              <option value="h1_trending">1 Hour Trending</option>
-              <option value="h6_trending">6 Hours Trending</option>
-              <option value="h24_trending">24 Hours Trending</option>
-              <option value="h24_tx_count_desc">24h Transaction Count</option>
-              <option value="h24_volume_usd_desc">24h Volume</option>
-              <option value="h24_price_change_percentage_desc">
-                24h Price Change
-              </option>
-              <option value="pool_created_at_desc">Pool Creation Date</option>
-            </Select>
-          </FilterGroup>
+            <FilterGroup>
+              <Label>Max Pool Age (hours)</Label>
+              <Input
+                type="number"
+                name="maxPoolAge"
+                value={filters.maxPoolAge}
+                onChange={handleFilterChange}
+                placeholder="Enter max pool age"
+              />
+            </FilterGroup>
 
-          <SubmitButton type="submit">Submit</SubmitButton>
-        </form>
-      </FilterSection>
+            <FilterGroup>
+              <Label>Sort</Label>
+              <Select
+                name="sort"
+                value={filters.sort}
+                onChange={handleFilterChange}
+              >
+                <option value="m5_trending">5 Min Trending</option>
+                <option value="h1_trending">1 Hour Trending</option>
+                <option value="h6_trending">6 Hours Trending</option>
+                <option value="h24_trending">24 Hours Trending</option>
+                <option value="h24_tx_count_desc">24h Transaction Count</option>
+                <option value="h24_volume_usd_desc">24h Volume</option>
+                <option value="h24_price_change_percentage_desc">
+                  24h Price Change
+                </option>
+                <option value="pool_created_at_desc">Pool Creation Date</option>
+              </Select>
+            </FilterGroup>
 
-      <Table>
-        <thead>
-          <tr>
-            <Th>Asset Name</Th>
-            <Th>Market Cap</Th>
-            <Th>24H Change</Th>
-            <Th>Action</Th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading ? (
+            <SubmitButton type="submit">Submit</SubmitButton>
+          </form>
+        </FilterSection>
+
+        <Table>
+          <thead>
             <tr>
-              <Td colSpan="4">Loading...</Td>
+              <Th>Asset Name</Th>
+              <Th>Market Cap</Th>
+              <Th>24H Change</Th>
+              <Th>Action</Th>
             </tr>
-          ) : (
-            assets.map((asset) => (
-              <tr key={asset.id}>
-                <Td>{asset.attributes.name}</Td>
-                <Td>{formatMarketCap(asset.attributes.fdv_usd)}</Td>
-                <Td>
-                  {formatPriceChange(
-                    asset.attributes.price_change_percentage?.h24
-                  )}
-                  %
-                </Td>
-                <Td>
-                  <AddButton
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <Td colSpan="4">Loading...</Td>
+              </tr>
+            ) : (
+              assets.map((asset) => (
+                <tr key={asset.id}>
+                  <AssetNameCell
                     onClick={() =>
-                      addChart(
+                      fetchTokenDetails(
                         asset.relationships.network.data.id,
                         asset.attributes.address
                       )
                     }
                   >
-                    Add
-                  </AddButton>
-                </Td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </Table>
+                    {asset.attributes.name}
+                  </AssetNameCell>
+                  <Td>{formatMarketCap(asset.attributes.fdv_usd)}</Td>
+                  <Td>
+                    {formatPriceChange(
+                      asset.attributes.price_change_percentage?.h24
+                    )}
+                    %
+                  </Td>
+                  <Td>
+                    <AddButton
+                      onClick={() =>
+                        addChart(
+                          asset.relationships.network.data.id,
+                          asset.attributes.address
+                        )
+                      }
+                    >
+                      Add
+                    </AddButton>
+                  </Td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </Table>
+
+        <TokenDetailsModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          tokenDetails={tokenDetails}
+          currentTokenIndex={currentTokenIndex}
+          onNextToken={handleNextToken}
+          onPrevToken={handlePrevToken}
+          totalTokens={allTokens.length}
+        />
+      </TableContent>
     </TableContainer>
   );
 };
